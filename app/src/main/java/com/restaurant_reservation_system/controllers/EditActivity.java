@@ -20,8 +20,9 @@ import java.util.ArrayList;
 
 public class EditActivity extends AppCompatActivity {
 
-    String reservation_num, id, penalty, edit_time,name;
+    String reservation_num, id, penalty, edit_time, name;
     int day, month, year, maxNum;
+    Boolean is_admin;
     Booking booking;
 
     EditText covers;
@@ -48,33 +49,38 @@ public class EditActivity extends AppCompatActivity {
         submit_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int tableNum = Integer.parseInt(spinner.getSelectedItem().toString())-1;
+                int tableNum = Integer.parseInt(spinner.getSelectedItem().toString()) - 1;
                 String cover = covers.getText().toString();
-                Response.Listener<String> responseListener = new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(response);
-                            boolean success = jsonObject.getBoolean("success");
-                            if (success) {
-                                Toast.makeText(EditActivity.this, "수정 완료", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(EditActivity.this, "수정 실패", Toast.LENGTH_SHORT).show();
+                // id를 비교해서 같은 id가 아니면 Toast message 를 보내며 reject (관리자는 무조건 accept)
+                if (!id.equals(booking.getCustomer_id())) {
+                    Toast.makeText(EditActivity.this, "다른 사람의 예약 입니다.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Response.Listener<String> responseListener = new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                boolean success = jsonObject.getBoolean("success");
+                                if (success) {
+                                    Toast.makeText(EditActivity.this, "수정 완료", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(EditActivity.this, "수정 실패", Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
                         }
-                    }
-                };
-                // 서버로 Volley를 이용해서 요청을 함.
-                ReservationRequest3 reservationRequest = new ReservationRequest3(reservation_num,cover,edit_time,Integer.toString(tableNum), responseListener);
-                RequestQueue queue = Volley.newRequestQueue(EditActivity.this);
-                queue.add(reservationRequest);
-                Intent intent = new Intent(getApplicationContext(), TImeTableActivity.class);
-                pushing(intent);
-                startActivity(intent);
+                    };
+                    // 서버로 Volley를 이용해서 요청을 함.
+                    ReservationRequest3 reservationRequest = new ReservationRequest3(reservation_num, cover, edit_time, Integer.toString(tableNum), responseListener);
+                    RequestQueue queue = Volley.newRequestQueue(EditActivity.this);
+                    queue.add(reservationRequest);
+                    Intent intent = new Intent(getApplicationContext(), TImeTableActivity.class);
+                    pushing(intent);
+                    startActivity(intent);
 
 
+                }
             }
         });
 
@@ -83,29 +89,34 @@ public class EditActivity extends AppCompatActivity {
         delete_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Response.Listener<String> responseListener = new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject jsonObject = new JSONObject(response);
-                            boolean success = jsonObject.getBoolean("success");
-                            if (success) {
-                                Toast.makeText(EditActivity.this, "삭제완료", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(EditActivity.this, "삭제실패", Toast.LENGTH_SHORT).show();
+                // id를 비교해서 같은 id가 아니면 Toast message 를 보내며 reject (관리자는 무조건 accept)
+                if (!id.equals(booking.getCustomer_id())) {
+                    Toast.makeText(EditActivity.this, "다른 사람의 예약 입니다.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Response.Listener<String> responseListener = new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            try {
+                                JSONObject jsonObject = new JSONObject(response);
+                                boolean success = jsonObject.getBoolean("success");
+                                if (success) {
+                                    Toast.makeText(EditActivity.this, "삭제완료", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    Toast.makeText(EditActivity.this, "삭제실패", Toast.LENGTH_SHORT).show();
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
                         }
-                    }
-                };
-                // 서버로 Volley를 이용해서 요청을 함.
-                ReservationRequest2 reservationRequest = new ReservationRequest2(reservation_num, responseListener);
-                RequestQueue queue = Volley.newRequestQueue(EditActivity.this);
-                queue.add(reservationRequest);
-                Intent intent = new Intent(getApplicationContext(), TImeTableActivity.class);
-                pushing(intent);
-                startActivity(intent);
+                    };
+                    // 서버로 Volley를 이용해서 요청을 함.
+                    ReservationRequest2 reservationRequest = new ReservationRequest2(reservation_num, responseListener);
+                    RequestQueue queue = Volley.newRequestQueue(EditActivity.this);
+                    queue.add(reservationRequest);
+                    Intent intent = new Intent(getApplicationContext(), TImeTableActivity.class);
+                    pushing(intent);
+                    startActivity(intent);
+                }
             }
         });
     }
@@ -120,6 +131,7 @@ public class EditActivity extends AppCompatActivity {
         maxNum = getIntent().getIntExtra("maxNum", 1);
         penalty = getIntent().getStringExtra("penalty");
         name = getIntent().getStringExtra("name");
+        is_admin = getIntent().getBooleanExtra("is_admin", false);
         ArrayList<Booking> bookings = (ArrayList<Booking>) getIntent().getSerializableExtra("booking");
 
         // ArrayList 에서 예약 번호와 같은 booking 찾기
@@ -149,16 +161,17 @@ public class EditActivity extends AppCompatActivity {
         intent.putExtra("year", getIntent().getIntExtra("year", -1));
         intent.putExtra("maxNum", getIntent().getIntExtra("maxNum", -1));
         intent.putExtra("penalty", getIntent().getStringExtra("penalty"));
-        intent.putExtra("name",getIntent().getStringExtra("name"));
+        intent.putExtra("name", getIntent().getStringExtra("name"));
+        intent.putExtra("is_admin",getIntent().getBooleanExtra("is_admin",false));
     }
 
-    void showTime(){
+    void showTime() {
         TimePickerDialog timePickerDialog = new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
             @Override
             public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                edit_time = Integer.toString(hourOfDay)+":"+Integer.toString(minute);
+                edit_time = Integer.toString(hourOfDay) + ":" + Integer.toString(minute);
             }
-        },12, 00, false);
+        }, 12, 00, false);
         timePickerDialog.show();
     }
 }

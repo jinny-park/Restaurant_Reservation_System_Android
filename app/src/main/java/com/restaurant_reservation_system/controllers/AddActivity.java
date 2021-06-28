@@ -75,6 +75,7 @@ public class AddActivity extends AppCompatActivity {
                 intent.putExtra("year", getIntent().getIntExtra("year", 1));
                 intent.putExtra("maxNum",max_num+1);
                 intent.putExtra("penalty", getIntent().getStringExtra("penalty"));
+                intent.putExtra("is_admin",getIntent().getBooleanExtra("is_admin",false));
                 startActivity(intent);
 
 
